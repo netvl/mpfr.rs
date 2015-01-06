@@ -7,7 +7,7 @@ pub struct BigFloatBuilder;
 
 impl BigFloatBuilder {
     #[inline]
-    pub fn with_prec(precision: uint) -> BigFloatBuilderWithPrec {
+    pub fn with_prec(self, precision: uint) -> BigFloatBuilderWithPrec {
         BigFloatBuilderWithPrec(precision)
     }
 
@@ -15,7 +15,7 @@ impl BigFloatBuilder {
     pub fn fresh(self) -> BigFloat { BigFloat::fresh() }
 
     #[inline]
-    pub fn from<T: UpdateBigFloat>(self, value: &T) -> BigFloat {
+    pub fn from<T: UpdateBigFloat>(self, value: T) -> BigFloat {
         let mut r = BigFloat::fresh();
         r.set_to(value);
         r
@@ -29,7 +29,7 @@ impl BigFloatBuilderWithPrec {
     pub fn fresh(self) -> BigFloat { BigFloat::fresh_with_prec(self.0) }
 
     #[inline]
-    pub fn from<T: UpdateBigFloat>(self, value: &T) -> BigFloat {
+    pub fn from<T: UpdateBigFloat>(self, value: T) -> BigFloat {
         let mut r = BigFloat::fresh_with_prec(self.0);
         r.set_to(value);
         r

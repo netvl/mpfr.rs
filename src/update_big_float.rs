@@ -7,24 +7,24 @@ use mpfr_sys::*;
 use BigFloat;
 use global_rounding_mode;
 
-pub trait UpdateBigFloat {
-    fn update_big_float(&self, target: &mut BigFloat);
+pub trait UpdateBigFloat for ?Sized {
+    fn update_big_float(self, target: &mut BigFloat);
 }
 
 macro_rules! impl_big_float_set {
     ($t:ty as $tt:ty, $f:ident) => (
         impl UpdateBigFloat for $t {
-            fn update_big_float(&self, target: &mut BigFloat) {
+            fn update_big_float(self, target: &mut BigFloat) {
                 unsafe {
-                    $f(&mut target.value, *self as $tt, global_rounding_mode::get().to_rnd_t());
+                    $f(&mut target.value, self as $tt, global_rounding_mode::get().to_rnd_t());
                 }
             }
         }
     )
 }
 
-impl UpdateBigFloat for BigFloat {
-    fn update_big_float(&self, target: &mut BigFloat) {
+impl<'a> UpdateBigFloat for &'a BigFloat {
+    fn update_big_float(self, target: &mut BigFloat) {
         unsafe {
             mpfr_set(&mut target.value, &self.value, global_rounding_mode::get().to_rnd_t());
         }
@@ -40,13 +40,13 @@ impl_big_float_set! { u64 as uintmax_t, __gmpfr_set_uj }
 
 impl<'a> UpdateBigFloat for &'a str {
     #[inline]
-    fn update_big_float(&self, target: &mut BigFloat) {
-        (*self, 10).update_big_float(target);
+    fn update_big_float(self, target: &mut BigFloat) {
+        (self, 10).update_big_float(target);
     }
 }
 
 impl<'a> UpdateBigFloat for (&'a str, uint) {
-    fn update_big_float(&self, target: &mut BigFloat) {
+    fn update_big_float(self, target: &mut BigFloat) {
         self.0.with_c_str(|s| {
             let r = unsafe {
                 mpfr_set_str(
