@@ -13,10 +13,12 @@ use mpfr_sys::*;
 pub use update_big_float::UpdateBigFloat;
 pub use from_big_float::FromBigFloat;
 pub use builder::{BigFloatBuilder, BigFloatBuilderWithPrec};
+pub use format::FormatOptions;
 
 mod update_big_float;
 mod from_big_float;
 mod builder;
+pub mod format;
 
 pub mod traits {
     pub use UpdateBigFloat;
