@@ -1,8 +1,9 @@
-use libc::c_char;
-
-use std::c_str::{ToCStr, CString};
+use std::ffi::{self, CString};
 use std::ptr;
+use std::str;
 use std::borrow::ToOwned;
+
+use libc::c_char;
 
 use mpfr_sys::*;
 
@@ -129,25 +130,26 @@ impl FormatOptions {
 
     #[inline]
     pub fn format(&self, x: &BigFloat) -> String {
-        self.format_string().with_c_str(|f| unsafe {
+        let f = CString::from_vec(self.format_string().into_bytes());
+        unsafe {
             let rnd_mode = match self.rounding_mode {
                 RoundingMode::Specific(m) => m,
                 RoundingMode::Global => global_rounding_mode::get()
             }.to_rnd_t();
 
             let mut r: *mut c_char = ptr::null_mut();
-            let n = mpfr_asprintf(&mut r, f, rnd_mode, &x.value);
+            let n = mpfr_asprintf(&mut r, f.as_ptr(), rnd_mode, &x.value);
 
             if n < 0 {
                 panic!("Could not format the big float");
             }
-            let b = CString::new(r, false);
-            let rs = b.as_str().unwrap().to_owned();
+
+            let rs = str::from_utf8(ffi::c_str_to_bytes(&(r as *const _))).unwrap().to_owned();
 
             mpfr_free_str(r);
 
             rs
-        })
+        }
     }
 }
 

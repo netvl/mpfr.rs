@@ -1,12 +1,11 @@
-#![feature(globs, macro_rules, associated_types)]
-
 extern crate libc;
 extern crate "mpfr-sys" as mpfr_sys;
 
 use std::mem;
 use std::ptr;
-use std::c_str::CString;
 use std::borrow::ToOwned;
+use std::str;
+use std::ffi;
 
 use mpfr_sys::*;
 
@@ -221,8 +220,7 @@ impl BigFloat {
                 panic!("Couldn't convert big float to a string");
             }
 
-            let cs = CString::new(s, false);
-            let r = cs.as_str().unwrap().to_owned();
+            let r = str::from_utf8(ffi::c_str_to_bytes(&(s as *const _))).unwrap().to_owned();
 
             mpfr_free_str(s);
 

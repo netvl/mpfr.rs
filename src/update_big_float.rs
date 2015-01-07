@@ -1,4 +1,4 @@
-use std::c_str::ToCStr;
+use std::ffi::CString;
 
 use libc::{uintmax_t, intmax_t, c_double, c_float, c_int};
 
@@ -7,7 +7,7 @@ use mpfr_sys::*;
 use BigFloat;
 use global_rounding_mode;
 
-pub trait UpdateBigFloat for ?Sized {
+pub trait UpdateBigFloat {
     fn update_big_float(self, target: &mut BigFloat);
 }
 
@@ -47,17 +47,18 @@ impl<'a> UpdateBigFloat for &'a str {
 
 impl<'a> UpdateBigFloat for (&'a str, uint) {
     fn update_big_float(self, target: &mut BigFloat) {
-        self.0.with_c_str(|s| {
-            let r = unsafe {
-                mpfr_set_str(
-                    &mut target.value, s, self.1 as c_int, 
-                    global_rounding_mode::get().to_rnd_t()
-                )
-            };
-            if r != 0 {
-                panic!("Cannot set big float from a string: {}", self.0);
-            }
-        });
+        let s = CString::from_slice(self.0.as_bytes());
+
+        let r = unsafe {
+            mpfr_set_str(
+                &mut target.value, s.as_ptr(), self.1 as c_int, 
+                global_rounding_mode::get().to_rnd_t()
+            )
+        };
+
+        if r != 0 {
+            panic!("Cannot set big float from a string: {}", self.0);
+        }
     }
 }
 
