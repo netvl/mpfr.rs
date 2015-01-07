@@ -11,6 +11,14 @@ pub trait UpdateBigFloat {
     fn update_big_float(self, target: &mut BigFloat);
 }
 
+impl<'a> UpdateBigFloat for &'a BigFloat {
+    fn update_big_float(self, target: &mut BigFloat) {
+        unsafe {
+            mpfr_set(&mut target.value, &self.value, global_rounding_mode::get().to_rnd_t());
+        }
+    }
+}
+
 macro_rules! impl_big_float_set {
     ($t:ty as $tt:ty, $f:ident) => (
         impl UpdateBigFloat for $t {
@@ -21,14 +29,6 @@ macro_rules! impl_big_float_set {
             }
         }
     )
-}
-
-impl<'a> UpdateBigFloat for &'a BigFloat {
-    fn update_big_float(self, target: &mut BigFloat) {
-        unsafe {
-            mpfr_set(&mut target.value, &self.value, global_rounding_mode::get().to_rnd_t());
-        }
-    }
 }
 
 impl_big_float_set! { f32 as c_float,   mpfr_set_flt }

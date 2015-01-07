@@ -1,9 +1,7 @@
-#![feature(globs)]
-
 extern crate mpfr;
 
 use mpfr::{BigFloat, FormatOptions};
-use mpfr::format::Format;
+use mpfr::format::{flags, Format};
 
 #[test]
 fn test_basic_conversions() {
@@ -19,6 +17,10 @@ fn test_basic_conversions() {
 #[test]
 fn test_format() {
     let f = BigFloat::new().from::<f64>(12345.67);
-    let r = FormatOptions::new(Format::Fixed).with_precision(3).format(&f);
-    assert_eq!("12345.670", r[]);
+    let r = FormatOptions::new(Format::Fixed)
+        .with_flags(flags::SIGN | flags::ZERO_PADDED)
+        .with_width(12)
+        .with_precision(3)
+        .format(&f);
+    assert_eq!("+0012345.670", r[]);
 }

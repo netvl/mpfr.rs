@@ -1,16 +1,28 @@
-use std::ffi::{self, CString};
+use std::ffi::CString;
 use std::ptr;
-use std::str;
-use std::borrow::ToOwned;
+use std::string::CowString;
+use std::borrow::{ToOwned, IntoCow};
 
-use libc::c_char;
+use libc::{c_char, size_t};
 
 use mpfr_sys::*;
 
 use BigFloat;
 use global_rounding_mode;
 
-// TODO: add flags
+pub use self::flags::Flags;
+
+pub mod flags {
+    bitflags! {
+        flags Flags: u8 {
+            const ALTERNATE_FORM = 1 << 0,
+            const ZERO_PADDED    = 1 << 1,
+            const LEFT_ADJUSTED  = 1 << 2,
+            const BLANK          = 1 << 3,
+            const SIGN           = 1 << 4
+        }
+    }
+}
 
 #[derive(Copy, PartialEq, Eq)]
 pub enum Format {
@@ -33,10 +45,10 @@ pub enum RoundingMode {
     Global
 }
 
-#[allow(missing_copy_implementations)]
 #[derive(Copy, PartialEq, Eq)]
 pub struct FormatOptions {
     pub format: Format,
+    pub flags: Flags,
     pub case: Case,
     pub rounding_mode: RoundingMode,
     pub width: Option<u32>,
@@ -47,6 +59,7 @@ impl FormatOptions {
     pub fn new(format: Format) -> FormatOptions {
         FormatOptions {
             format: format,
+            flags: Flags::empty(),
             case: Case::Lower,
             rounding_mode: RoundingMode::Global,
             width: None,
@@ -57,6 +70,12 @@ impl FormatOptions {
     #[inline]
     pub fn with_format(mut self, format: Format) -> FormatOptions {
         self.format = format;
+        self
+    }
+
+    #[inline]
+    pub fn with_flags(mut self, flags: Flags) -> FormatOptions {
+        self.flags = flags;
         self
     }
 
@@ -104,13 +123,25 @@ impl FormatOptions {
 
     pub fn format_string(&self) -> String {
         let mut result = b"%".to_owned();
+
+        for_flags! { self.flags,
+            flags::ALTERNATE_FORM => result.push(b'#'),
+            flags::ZERO_PADDED    => result.push(b'0'),
+            flags::LEFT_ADJUSTED  => result.push(b'-'),
+            flags::BLANK          => result.push(b' '),
+            flags::SIGN           => result.push(b'+')
+        }
+
         if let Some(width) = self.width {
             write!(&mut result, "{}", width).unwrap();
         }
+
         if let Some(precision) = self.precision {
             write!(&mut result, ".{}", precision).unwrap();
         }
+
         let mut result = String::from_utf8(result).unwrap();
+
         result.push_str("R*");  // rounding mode from arguments
         let c = match self.format {
             Format::HexFloat => 'a',
@@ -128,33 +159,48 @@ impl FormatOptions {
         result
     }
 
-    #[inline]
     pub fn format(&self, x: &BigFloat) -> String {
-        let f = CString::from_vec(self.format_string().into_bytes());
-        unsafe {
-            let rnd_mode = match self.rounding_mode {
-                RoundingMode::Specific(m) => m,
-                RoundingMode::Global => global_rounding_mode::get()
-            }.to_rnd_t();
-
-            let mut r: *mut c_char = ptr::null_mut();
-            let n = mpfr_asprintf(&mut r, f.as_ptr(), rnd_mode, &x.value);
-
-            if n < 0 {
-                panic!("Could not format the big float");
-            }
-
-            let rs = str::from_utf8(ffi::c_str_to_bytes(&(r as *const _))).unwrap().to_owned();
-
-            mpfr_free_str(r);
-
-            rs
-        }
+        unsafe { format_with_string(self.format_string().into_cow(), self.rounding_mode, x) }
     }
+
+}
+
+pub unsafe fn format_raw(fmt: CowString, rounding_mode: RoundingMode, x: &BigFloat) -> String {
+    let f = CString::from_vec(fmt.into_owned().into_bytes());
+
+    let rnd_mode = match rounding_mode {
+        RoundingMode::Specific(m) => m,
+        RoundingMode::Global => global_rounding_mode::get()
+    }.to_rnd_t();
+
+    // get the required number of bytes
+    let n = mpfr_snprintf(ptr::null_mut(), 0, f.as_ptr(), rnd_mode, &x.value);
+    if n < 0 {
+        panic!("Could not format the big float");
+    }
+
+    // allocate the buffer and format the string into it
+    let n = n as uint;
+    let mut data: Vec<u8> = Vec::with_capacity(n+1);
+    data.set_len(n+1);
+
+    let n = mpfr_snprintf(
+        data.as_mut_ptr() as *mut c_char, 
+        n as size_t + 1,
+        f.as_ptr(), rnd_mode, &x.value
+    );
+    if n < 0 {
+        panic!("Could not format the big float");
+    }
+    data.pop();  // drop the zero byte
+
+    String::from_utf8(data).unwrap()
 }
 
 #[cfg(test)]
 mod tests {
+    use std::str;
+
     use super::*;
 
     #[test]
@@ -191,6 +237,30 @@ mod tests {
             Format::Fixed,             Case::Upper -> "%R*F";
             Format::Scientific,        Case::Upper -> "%R*E";
             Format::FixedOrScientific, Case::Upper -> "%R*G"
+        }
+    }
+
+    #[test]
+    fn test_flags() {
+        use util::SliceSubsetsExt;
+
+        let flags = [
+            (flags::ALTERNATE_FORM, b"#"),
+            (flags::ZERO_PADDED,    b"0"),
+            (flags::LEFT_ADJUSTED,  b"-"),
+            (flags::BLANK,          b" "),
+            (flags::SIGN,           b"+")
+        ];
+
+        let mut cases = flags.subsets()
+            .map(|s| s.fold((Flags::empty(), Vec::new()), |(fs, ss), &(f, s)| (fs | f, ss + s)));
+
+        for (flags, s) in cases {
+            let expected_string = format!("%{}R*f", str::from_utf8(s[]).unwrap());
+            let actual_string = FormatOptions::new(Format::Fixed)
+                .with_flags(flags)
+                .format_string();
+            assert_eq!(expected_string, actual_string);
         }
     }
 
