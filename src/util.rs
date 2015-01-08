@@ -102,6 +102,9 @@ impl<'a, T: 'a> Iterator for Subset<'a, T> {
 mod tests {
     use super::*;
 
+    #[inline(always)]
+    pub fn deref<T: Copy>(x: &T) -> T { *x }
+
     #[test]
     fn test_empty_slice_subsets() {
         static S: &'static [u8] = &[];
@@ -118,7 +121,7 @@ mod tests {
     fn test_subsets() {
         static S: &'static [u8] = &[1, 2, 3];
 
-        let r: Vec<Vec<u8>> = S.subsets().map(|s| s.map(|x| *x).collect()).collect();
+        let r: Vec<Vec<u8>> = S.subsets().map(|s| s.map(deref).collect()).collect();
 
         assert_eq!(8, r.len());
 

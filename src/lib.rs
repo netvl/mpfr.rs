@@ -71,6 +71,21 @@ impl Clone for BigFloat {
     }
 }
 
+macro_rules! generate_predicates {
+    ($t:ty, $($(#[$attr:meta])* fn $method:ident -> $mpfr:ident),+) => (
+        impl $t {
+        $(
+            $(#[$attr])*
+            pub fn $method(&self) -> bool {
+                unsafe {
+                    $mpfr(&self.value) != 0
+                }
+            }
+        )+
+        }
+    )
+}
+
 impl BigFloat {
     #[inline]
     pub fn new() -> BigFloatBuilder { BigFloatBuilder }
@@ -182,4 +197,17 @@ impl BigFloat {
             (r, exp as u64)
         }
     }
+}
+
+generate_predicates! { BigFloat,
+    #[doc="Checks that this number is NaN."]
+    fn is_nan     -> mpfr_nan_p,
+    #[doc="Checks that this number is an infinity (positive or negative)."]
+    fn is_inf     -> mpfr_inf_p,
+    #[doc="Checks that this number is an ordinary number (neither NaN nor an infinity)."]
+    fn is_number  -> mpfr_number_p,
+    #[doc="Checks that this number is zero."]
+    fn is_zero    -> mpfr_zero_p,
+    #[doc="Checks that this number is a regular number (neither NaN, nor an infinity nor zero)."]
+    fn is_regular -> mpfr_regular_p
 }

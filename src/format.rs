@@ -160,7 +160,7 @@ impl FormatOptions {
     }
 
     pub fn format(&self, x: &BigFloat) -> String {
-        unsafe { format_with_string(self.format_string().into_cow(), self.rounding_mode, x) }
+        unsafe { format_raw(self.format_string().into_cow(), self.rounding_mode, x) }
     }
 
 }
