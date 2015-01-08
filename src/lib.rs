@@ -6,7 +6,7 @@ use std::ptr;
 use std::borrow::ToOwned;
 use std::str;
 use std::ffi;
-use std::ops::Add;
+use std::ops::{Add, Mul};
 
 use libc::c_double;
 
@@ -219,52 +219,77 @@ generate_predicates! { BigFloat,
 // If one of the operands is of primitive type, then either the BigFloat operand will
 // be reused for the result or it will be cloned.
 
-// x + &y
-impl<'a> Add<&'a BigFloat> for BigFloat {
-    type Output = BigFloat;
+macro_rules! impl_commutative_op_val_ref {
+    ($tr:ident, $meth:ident, $mpfr:ident) => {
+        impl<'a> $tr<&'a BigFloat> for BigFloat {
+            type Output = BigFloat;
 
-    fn add(mut self, rhs: &'a BigFloat) -> BigFloat {
-        unsafe {
-            mpfr_add(
-                &mut self.value,
-                &self.value, &rhs.value,
-                global_rounding_mode::get().to_rnd_t()
-            );
+            fn $meth(mut self, rhs: &'a BigFloat) -> BigFloat {
+                unsafe {
+                    $mpfr(
+                        &mut self.value,
+                        &self.value, &rhs.value,
+                        global_rounding_mode::get().to_rnd_t()
+                    );
+                }
+                self
+            }
         }
-        self
     }
 }
 
-// x + y
-impl Add<BigFloat> for BigFloat {
-    type Output = BigFloat;
+macro_rules! impl_commutative_op_val_val {
+    ($tr:ident, $meth:ident) => {
+        impl $tr<BigFloat> for BigFloat {
+            type Output = BigFloat;
 
-    #[inline]
-    fn add(self, rhs: BigFloat) -> BigFloat {
-        self + &rhs
+            #[inline]
+            fn $meth(self, rhs: BigFloat) -> BigFloat {
+                self.$meth(&rhs)
+            }
+        }
     }
 }
 
-// &x + y
-impl<'r> Add<BigFloat> for &'r BigFloat {
-    type Output = BigFloat;
+macro_rules! impl_commutative_op_ref_val {
+    ($tr:ident, $meth:ident) => {
+        impl<'r> $tr<BigFloat> for &'r BigFloat {
+            type Output = BigFloat;
 
-    #[inline]
-    fn add(self, rhs: BigFloat) -> BigFloat {
-        rhs + self
+            #[inline]
+            fn $meth(self, rhs: BigFloat) -> BigFloat {
+                rhs.$meth(self)
+            }
+        }
     }
 }
 
-// &x + &y
-impl<'a, 'r> Add<&'a BigFloat> for &'r BigFloat {
-    type Output = BigFloat;
+macro_rules! impl_commutative_op_ref_ref {
+    ($tr:ident, $meth:ident) => {
+        impl<'a, 'r> $tr<&'a BigFloat> for &'r BigFloat {
+            type Output = BigFloat;
 
-    #[inline]
-    fn add(self, rhs: &'a BigFloat) -> BigFloat {
-        let c = self.clone();
-        c + rhs
+            #[inline]
+            fn $meth(self, rhs: &'a BigFloat) -> BigFloat {
+                let c = self.clone();
+                c.$meth(rhs)
+            }
+        }
     }
 }
+
+macro_rules! impl_commutative_op {
+    ($tr:ident, $meth:ident, $mpfr:ident) => {
+        impl_commutative_op_val_ref! { $tr, $meth, $mpfr }
+        impl_commutative_op_val_val! { $tr, $meth }
+        impl_commutative_op_ref_val! { $tr, $meth }
+        impl_commutative_op_ref_ref! { $tr, $meth }
+    }
+}
+
+// Addition
+
+impl_commutative_op! { Add, add, mpfr_add }
 
 // x + f
 impl Add<f64> for BigFloat {
@@ -314,3 +339,7 @@ impl<'r> Add<&'r BigFloat> for f64 {
     }
 }
 */
+
+// Multiplication
+
+impl_commutative_op! { Mul, mul, mpfr_mul }
