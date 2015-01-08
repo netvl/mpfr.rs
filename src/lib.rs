@@ -14,13 +14,14 @@ use mpfr_sys::*;
 
 pub use update_big_float::UpdateBigFloat;
 pub use from_big_float::FromBigFloat;
+pub use to_big_float::ToBigFloat;
 pub use builder::{BigFloatBuilder, BigFloatBuilderWithPrec};
-pub use format::FormatOptions;
 pub use rounding_mode::{RoundingMode, global_rounding_mode};
 
 mod util;
 mod update_big_float;
 mod from_big_float;
+mod to_big_float;
 mod builder;
 mod rounding_mode;
 
@@ -29,26 +30,13 @@ pub mod format;
 pub mod traits {
     pub use UpdateBigFloat;
     pub use FromBigFloat;
+    pub use ToBigFloat;
 }
 
 #[derive(Copy)]
 pub enum Sign {
     Negative,
     Positive
-}
-
-#[inline]
-pub fn set_default_prec(precision: uint) {
-    unsafe {
-        mpfr_set_default_prec(precision as mpfr_prec_t);
-    }
-}
-
-#[inline]
-pub fn get_default_prec() -> uint {
-    unsafe {
-        mpfr_get_default_prec() as uint
-    }
 }
 
 pub struct BigFloat {
@@ -63,12 +51,7 @@ impl Drop for BigFloat {
 
 impl Clone for BigFloat {
     fn clone(&self) -> BigFloat {
-        let mut new_value = self.clone_unset();
-        unsafe {
-            // rounding mode does not matter here
-            mpfr_set(&mut new_value.value, &self.value, MPFR_RNDN);
-        }
-        new_value
+        BigFloat::new().with_prec(self.prec()).from(self)
     }
 }
 
@@ -88,6 +71,16 @@ macro_rules! generate_predicates {
 }
 
 impl BigFloat {
+    #[inline]
+    pub fn set_default_prec(precision: uint) {
+        unsafe { mpfr_set_default_prec(precision as mpfr_prec_t); }
+    }
+
+    #[inline]
+    pub fn get_default_prec() -> uint {
+        unsafe { mpfr_get_default_prec() as uint }
+    }
+
     #[inline]
     pub fn new() -> BigFloatBuilder { BigFloatBuilder }
 
@@ -146,15 +139,6 @@ impl BigFloat {
                 Sign::Positive =>  1
             });
         }
-    }
-
-    pub fn clone_unset(&self) -> BigFloat {
-        let mut new_value = unsafe { mem::uninitialized() };
-        unsafe {
-            let prec = mpfr_get_prec(&self.value);
-            mpfr_init2(&mut new_value, prec);
-        }
-        BigFloat { value: new_value }
     }
 
     #[inline]
@@ -277,7 +261,7 @@ impl<'a, 'r> Add<&'a BigFloat> for &'r BigFloat {
 
     #[inline]
     fn add(self, rhs: &'a BigFloat) -> BigFloat {
-        let c = self.clone_unset();
+        let c = self.clone();
         c + rhs
     }
 }

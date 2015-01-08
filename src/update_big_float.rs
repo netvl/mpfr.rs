@@ -20,7 +20,7 @@ impl<'a> UpdateBigFloat for &'a BigFloat {
 }
 
 macro_rules! impl_big_float_set {
-    ($t:ty as $tt:ty, $f:ident) => (
+    ($t:ty as $tt:ty, $f:ident) => {
         impl UpdateBigFloat for $t {
             fn update_big_float(self, target: &mut BigFloat) {
                 unsafe {
@@ -28,15 +28,24 @@ macro_rules! impl_big_float_set {
                 }
             }
         }
-    )
+    };
+    ($($t:ty as $tt:ty, $f:ident);+) => {
+        $(impl_big_float_set! { $t as $tt, $f })+
+    }
 }
 
-impl_big_float_set! { f32 as c_float,   mpfr_set_flt }
-impl_big_float_set! { f64 as c_double,  mpfr_set_d }
-impl_big_float_set! { i32 as intmax_t,  __gmpfr_set_sj }
-impl_big_float_set! { u32 as uintmax_t, __gmpfr_set_uj }
-impl_big_float_set! { i64 as intmax_t,  __gmpfr_set_sj }
-impl_big_float_set! { u64 as uintmax_t, __gmpfr_set_uj }
+impl_big_float_set! {
+    f32 as c_float,   mpfr_set_flt;
+    f64 as c_double,  mpfr_set_d;
+    i8  as intmax_t,  __gmpfr_set_sj;
+    u8  as uintmax_t, __gmpfr_set_uj;
+    i16 as intmax_t,  __gmpfr_set_sj;
+    u16 as uintmax_t, __gmpfr_set_uj;
+    i32 as intmax_t,  __gmpfr_set_sj;
+    u32 as uintmax_t, __gmpfr_set_uj;
+    i64 as intmax_t,  __gmpfr_set_sj;
+    u64 as uintmax_t, __gmpfr_set_uj
+}
 
 impl<'a> UpdateBigFloat for &'a str {
     #[inline]

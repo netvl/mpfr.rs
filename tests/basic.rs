@@ -1,7 +1,7 @@
 extern crate mpfr;
 
-use mpfr::{BigFloat, FormatOptions};
-use mpfr::format::{flags, Format};
+use mpfr::{BigFloat};
+use mpfr::format::{flags, FormatOptions, Format};
 
 #[test]
 fn test_basic_conversions() {
