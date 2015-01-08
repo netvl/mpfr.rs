@@ -6,6 +6,9 @@ use std::ptr;
 use std::borrow::ToOwned;
 use std::str;
 use std::ffi;
+use std::ops::Add;
+
+use libc::c_double;
 
 use mpfr_sys::*;
 
@@ -60,14 +63,12 @@ impl Drop for BigFloat {
 
 impl Clone for BigFloat {
     fn clone(&self) -> BigFloat {
-        let mut new_value = unsafe { mem::uninitialized() };
+        let mut new_value = self.clone_unset();
         unsafe {
-            let prec = mpfr_get_prec(&self.value);
-            mpfr_init2(&mut new_value, prec);
             // rounding mode does not matter here
-            mpfr_set(&mut new_value, &self.value, MPFR_RNDN);
+            mpfr_set(&mut new_value.value, &self.value, MPFR_RNDN);
         }
-        BigFloat { value: new_value }
+        new_value
     }
 }
 
@@ -147,6 +148,15 @@ impl BigFloat {
         }
     }
 
+    pub fn clone_unset(&self) -> BigFloat {
+        let mut new_value = unsafe { mem::uninitialized() };
+        unsafe {
+            let prec = mpfr_get_prec(&self.value);
+            mpfr_init2(&mut new_value, prec);
+        }
+        BigFloat { value: new_value }
+    }
+
     #[inline]
     pub fn swap(&mut self, other: &mut BigFloat) {
         unsafe {
@@ -211,3 +221,112 @@ generate_predicates! { BigFloat,
     #[doc="Checks that this number is a regular number (neither NaN, nor an infinity nor zero)."]
     fn is_regular -> mpfr_regular_p
 }
+
+// Implementation of arithmetic operations for BigFloat.
+// Basically, all operations are implemented both for BigFloat and &BigFloat as RHS and LHS
+// (4 variants total: value + value, value + reference, reference + value, reference + reference).
+//
+// If one of the operands is a value, then it is used to hold the result. If both of the
+// operands are values, LHS gets a priority. If both of the operands are references,
+// the LHS is cloned and used to hold the result.
+//
+// The order is important if participating values have different precisions.
+//
+// If one of the operands is of primitive type, then either the BigFloat operand will
+// be reused for the result or it will be cloned.
+
+// x + &y
+impl<'a> Add<&'a BigFloat> for BigFloat {
+    type Output = BigFloat;
+
+    fn add(mut self, rhs: &'a BigFloat) -> BigFloat {
+        unsafe {
+            mpfr_add(
+                &mut self.value,
+                &self.value, &rhs.value,
+                global_rounding_mode::get().to_rnd_t()
+            );
+        }
+        self
+    }
+}
+
+// x + y
+impl Add<BigFloat> for BigFloat {
+    type Output = BigFloat;
+
+    #[inline]
+    fn add(self, rhs: BigFloat) -> BigFloat {
+        self + &rhs
+    }
+}
+
+// &x + y
+impl<'r> Add<BigFloat> for &'r BigFloat {
+    type Output = BigFloat;
+
+    #[inline]
+    fn add(self, rhs: BigFloat) -> BigFloat {
+        rhs + self
+    }
+}
+
+// &x + &y
+impl<'a, 'r> Add<&'a BigFloat> for &'r BigFloat {
+    type Output = BigFloat;
+
+    #[inline]
+    fn add(self, rhs: &'a BigFloat) -> BigFloat {
+        let c = self.clone_unset();
+        c + rhs
+    }
+}
+
+// x + f
+impl Add<f64> for BigFloat {
+    type Output = BigFloat;
+
+    fn add(mut self, rhs: f64) -> BigFloat {
+        unsafe {
+            mpfr_add_d(
+                &mut self.value,
+                &self.value, rhs as c_double,
+                global_rounding_mode::get().to_rnd_t()
+            );
+        }
+        self
+    }
+}
+
+// &x + f
+impl<'r> Add<f64> for &'r BigFloat {
+    type Output = BigFloat;
+
+    #[inline]
+    fn add(self, rhs: f64) -> BigFloat {
+        let r = self.clone();
+        r + rhs
+    }
+}
+
+/*
+// f + x
+impl Add<BigFloat> for f64 {
+    type Output = BigFloat;
+
+    #[inline]
+    fn add(self, rhs: BigFloat) -> BigFloat {
+        rhs + self
+    }
+}
+
+// f + &x
+impl<'r> Add<&'r BigFloat> for f64 {
+    type Output = BigFloat;
+
+    #[inline]
+    fn add(self, rhs: &'r BigFloat) -> BigFloat {
+        rhs + self
+    }
+}
+*/
