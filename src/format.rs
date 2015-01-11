@@ -180,7 +180,7 @@ pub unsafe fn format_raw(fmt: CowString, rounding_mode: RoundingMode, x: &BigFlo
     }
 
     // allocate the buffer and format the string into it
-    let n = n as uint;
+    let n = n as usize;
     let mut data: Vec<u8> = Vec::with_capacity(n+1);
     data.set_len(n+1);
 

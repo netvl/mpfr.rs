@@ -31,11 +31,11 @@ pub mod global_rounding_mode {
 
 #[derive(Copy, PartialEq, Eq, Show)]
 pub enum RoundingMode {
-    ToNearest    = MPFR_RNDN as int,
-    TowardsZero  = MPFR_RNDZ as int,
-    Upwards      = MPFR_RNDU as int,
-    Downwards    = MPFR_RNDD as int,
-    AwayFromZero = MPFR_RNDA as int
+    ToNearest    = MPFR_RNDN as isize,
+    TowardsZero  = MPFR_RNDZ as isize,
+    Upwards      = MPFR_RNDU as isize,
+    Downwards    = MPFR_RNDD as isize,
+    AwayFromZero = MPFR_RNDA as isize
 }
 
 impl RoundingMode {

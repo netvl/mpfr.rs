@@ -7,7 +7,7 @@ pub struct BigFloatBuilder;
 
 impl BigFloatBuilder {
     #[inline]
-    pub fn with_prec(self, precision: uint) -> BigFloatBuilderWithPrec {
+    pub fn with_prec(self, precision: usize) -> BigFloatBuilderWithPrec {
         BigFloatBuilderWithPrec(precision)
     }
 
@@ -22,7 +22,7 @@ impl BigFloatBuilder {
     }
 }
 
-pub struct BigFloatBuilderWithPrec(uint);
+pub struct BigFloatBuilderWithPrec(usize);
 
 impl BigFloatBuilderWithPrec {
     #[inline]

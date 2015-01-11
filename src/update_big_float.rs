@@ -54,7 +54,7 @@ impl<'a> UpdateBigFloat for &'a str {
     }
 }
 
-impl<'a> UpdateBigFloat for (&'a str, uint) {
+impl<'a> UpdateBigFloat for (&'a str, usize) {
     fn update_big_float(self, target: &mut BigFloat) {
         let s = CString::from_slice(self.0.as_bytes());
 

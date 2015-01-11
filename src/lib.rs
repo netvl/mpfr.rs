@@ -1,3 +1,5 @@
+#![allow(unstable)]
+
 extern crate libc;
 extern crate "mpfr-sys" as mpfr_sys;
 
@@ -6,7 +8,7 @@ use std::ptr;
 use std::borrow::ToOwned;
 use std::str;
 use std::ffi;
-use std::ops::{Add, Mul};
+use std::ops::{Add, Mul, Sub, Div};
 
 use libc::c_double;
 
@@ -31,6 +33,11 @@ pub mod traits {
     pub use UpdateBigFloat;
     pub use FromBigFloat;
     pub use ToBigFloat;
+}
+
+#[inline]
+fn grnd() -> mpfr_rnd_t {
+    global_rounding_mode::get().to_rnd_t()
 }
 
 #[derive(Copy)]
@@ -72,13 +79,13 @@ macro_rules! generate_predicates {
 
 impl BigFloat {
     #[inline]
-    pub fn set_default_prec(precision: uint) {
+    pub fn set_default_prec(precision: usize) {
         unsafe { mpfr_set_default_prec(precision as mpfr_prec_t); }
     }
 
     #[inline]
-    pub fn get_default_prec() -> uint {
-        unsafe { mpfr_get_default_prec() as uint }
+    pub fn get_default_prec() -> usize {
+        unsafe { mpfr_get_default_prec() as usize }
     }
 
     #[inline]
@@ -94,7 +101,7 @@ impl BigFloat {
         }
     }
 
-    pub fn fresh_with_prec(precision: uint) -> BigFloat {
+    pub fn fresh_with_prec(precision: usize) -> BigFloat {
         BigFloat {
             value: unsafe {
                 let mut value = mem::uninitialized();
@@ -148,27 +155,25 @@ impl BigFloat {
         }
     }
 
-    pub fn prec(&self) -> uint {
+    pub fn prec(&self) -> usize {
         unsafe {
-            mpfr_get_prec(&self.value) as uint
+            mpfr_get_prec(&self.value) as usize
         }
     }
 
-    pub fn set_prec_clear(&mut self, precision: uint) {
+    pub fn set_prec_clear(&mut self, precision: usize) {
         unsafe {
             mpfr_set_prec(&mut self.value, precision as mpfr_prec_t);
         }
     }
 
-    pub fn set_prec_round(&mut self, precision: uint) {
+    pub fn set_prec_round(&mut self, precision: usize) {
         unsafe {
-            mpfr_prec_round(&mut self.value, 
-                            precision as mpfr_prec_t, 
-                            global_rounding_mode::get().to_rnd_t());
+            mpfr_prec_round(&mut self.value, precision as mpfr_prec_t, grnd());
         }
     }
 
-    pub fn to_string_in_base(&self, base: uint) -> (String, u64) {
+    pub fn to_string_in_base(&self, base: usize) -> (String, u64) {
         unsafe {
             let mut exp: mpfr_exp_t = 0;
             // We're going to ask MPFR to allocate the string itself, so the maximum
@@ -177,7 +182,7 @@ impl BigFloat {
                 ptr::null_mut(),
                 &mut exp, base as libc::c_int, 
                 0, &self.value,
-                global_rounding_mode::get().to_rnd_t()
+                grnd()
             );
 
             if s.is_null() {
@@ -217,7 +222,9 @@ generate_predicates! { BigFloat,
 // The order is important if participating values have different precisions.
 //
 // If one of the operands is of primitive type, then either the BigFloat operand will
-// be reused for the result or it will be cloned.
+// be reused for the result or (if it is a reference) it will be cloned.
+
+// Commutative operations (+, *)
 
 macro_rules! impl_commutative_op_val_ref {
     ($tr:ident, $meth:ident, $mpfr:ident) => {
@@ -226,11 +233,7 @@ macro_rules! impl_commutative_op_val_ref {
 
             fn $meth(mut self, rhs: &'a BigFloat) -> BigFloat {
                 unsafe {
-                    $mpfr(
-                        &mut self.value,
-                        &self.value, &rhs.value,
-                        global_rounding_mode::get().to_rnd_t()
-                    );
+                    $mpfr(&mut self.value, &self.value, &rhs.value, grnd());
                 }
                 self
             }
@@ -271,75 +274,139 @@ macro_rules! impl_commutative_op_ref_ref {
 
             #[inline]
             fn $meth(self, rhs: &'a BigFloat) -> BigFloat {
-                let c = self.clone();
-                c.$meth(rhs)
+                self.clone().$meth(rhs)
+            }
+        }
+    }
+}
+
+macro_rules! impl_commutative_op_val_prim {
+    ($tr:ident, $meth:ident, $prim:ty, $c_prim:ty, $mpfr:ident) => {
+        impl $tr<$prim> for BigFloat {
+            type Output = BigFloat;
+
+            fn $meth(mut self, rhs: $prim) -> BigFloat {
+                unsafe {
+                    $mpfr(&mut self.value, &self.value, rhs as $c_prim, grnd());
+                }
+                self
+            }
+        }
+    }
+}
+
+macro_rules! impl_commutative_op_ref_prim {
+    ($tr:ident, $meth:ident, $prim:ty) => {
+        impl<'r> $tr<$prim> for &'r BigFloat {
+            type Output = BigFloat;
+
+            #[inline]
+            fn $meth(self, rhs: $prim) -> BigFloat {
+                self.clone() + rhs
+            }
+        }
+    }
+}
+
+macro_rules! impl_commutative_op_prim_val {
+    ($tr:ident, $meth:ident, $prim:ty) => {
+        impl $tr<BigFloat> for $prim {
+            type Output = BigFloat;
+
+            #[inline]
+            fn $meth(self, rhs: BigFloat) -> BigFloat {
+                rhs + self
+            }
+        }
+    }
+}
+
+macro_rules! impl_commutative_op_prim_ref {
+    ($tr:ident, $meth:ident, $prim:ty) => {
+        impl<'r> $tr<&'r BigFloat> for $prim {
+            type Output = BigFloat;
+
+            #[inline]
+            fn add(self, rhs: &'r BigFloat) -> BigFloat {
+                rhs + self
             }
         }
     }
 }
 
 macro_rules! impl_commutative_op {
-    ($tr:ident, $meth:ident, $mpfr:ident) => {
+    ($tr:ident, $meth:ident, $mpfr:ident, $mpfr_f64:ident) => {
         impl_commutative_op_val_ref! { $tr, $meth, $mpfr }
         impl_commutative_op_val_val! { $tr, $meth }
         impl_commutative_op_ref_val! { $tr, $meth }
         impl_commutative_op_ref_ref! { $tr, $meth }
+        impl_commutative_op_val_prim! { $tr, $meth, f64, c_double, $mpfr_f64 }
+        impl_commutative_op_ref_prim! { $tr, $meth, f64 }
+        // Does not work now due to trait coherence rules :(
+        //impl_commutative_op_prim_val! { $tr, $meth, f64 }
+        //impl_commutative_op_prim_ref! { $tr, $meth, f64 }
+    }
+}
+
+// Non-commutative operations (-, /, **)
+
+macro_rules! impl_noncommutative_op_val_ref {
+    ($tr:ident, $meth:ident, $mpfr:ident) => { impl_commutative_op_val_ref! { $tr, $meth, $mpfr } }
+}
+
+macro_rules! impl_noncommutative_op_val_val {
+    ($tr:ident, $meth:ident) => { impl_commutative_op_val_val! { $tr, $meth } }
+}
+
+macro_rules! impl_noncommutative_op_ref_ref {
+    ($tr:ident, $meth:ident) => { impl_commutative_op_ref_ref! { $tr, $meth } }
+}
+
+macro_rules! impl_noncommutative_op_ref_val {
+    ($tr:ident, $meth:ident, $mpfr:ident) => {
+        impl<'r> $tr<BigFloat> for &'r BigFloat {
+            type Output = BigFloat;
+
+            fn $meth(self, mut rhs: BigFloat) -> BigFloat {
+                unsafe {
+                    $mpfr(&mut rhs.value, &self.value, &rhs.value, grnd());
+                }
+                rhs
+            }
+        }
+    }
+}
+
+macro_rules! impl_noncommutative_op_val_prim {
+    ($tr:ident, $meth:ident, $prim:ty, $c_prim:ty, $mpfr:ident) => {
+        impl_commutative_op_val_prim! { $tr, $meth, $prim, $c_prim, $mpfr }
+    }
+}
+
+macro_rules! impl_noncommutative_op_ref_prim {
+    ($tr:ident, $meth:ident, $prim:ty) => {
+        impl_commutative_op_ref_prim! { $tr, $meth, $prim }
+    }
+}
+
+macro_rules! impl_noncommutative_op {
+    ($tr:ident, $meth:ident, $mpfr:ident, $mpfr_f64:ident) => {
+        impl_noncommutative_op_val_ref! { $tr, $meth, $mpfr }
+        impl_noncommutative_op_val_val! { $tr, $meth }
+        impl_noncommutative_op_ref_val! { $tr, $meth, $mpfr }
+        impl_noncommutative_op_ref_ref! { $tr, $meth }
+        impl_noncommutative_op_val_prim! { $tr, $meth, f64, c_double, $mpfr_f64 }
     }
 }
 
 // Addition
-
-impl_commutative_op! { Add, add, mpfr_add }
-
-// x + f
-impl Add<f64> for BigFloat {
-    type Output = BigFloat;
-
-    fn add(mut self, rhs: f64) -> BigFloat {
-        unsafe {
-            mpfr_add_d(
-                &mut self.value,
-                &self.value, rhs as c_double,
-                global_rounding_mode::get().to_rnd_t()
-            );
-        }
-        self
-    }
-}
-
-// &x + f
-impl<'r> Add<f64> for &'r BigFloat {
-    type Output = BigFloat;
-
-    #[inline]
-    fn add(self, rhs: f64) -> BigFloat {
-        let r = self.clone();
-        r + rhs
-    }
-}
-
-/*
-// f + x
-impl Add<BigFloat> for f64 {
-    type Output = BigFloat;
-
-    #[inline]
-    fn add(self, rhs: BigFloat) -> BigFloat {
-        rhs + self
-    }
-}
-
-// f + &x
-impl<'r> Add<&'r BigFloat> for f64 {
-    type Output = BigFloat;
-
-    #[inline]
-    fn add(self, rhs: &'r BigFloat) -> BigFloat {
-        rhs + self
-    }
-}
-*/
+impl_commutative_op! { Add, add, mpfr_add, mpfr_add_d }
 
 // Multiplication
+impl_commutative_op! { Mul, mul, mpfr_mul, mpfr_mul_d }
 
-impl_commutative_op! { Mul, mul, mpfr_mul }
+// Subtraction
+impl_noncommutative_op! { Sub, sub, mpfr_sub, mpfr_sub_d }
+
+// Division
+impl_noncommutative_op! { Div, div, mpfr_div, mpfr_div_d }

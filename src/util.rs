@@ -78,7 +78,7 @@ impl<'a, T: 'a> Iterator for Subsets<'a, T> {
 pub struct Subset<'a, T: 'a> {
     slice: &'a [T],
     selected: Bitv,
-    current: uint
+    current: usize
 }
 
 impl<'a, T: 'a> Iterator for Subset<'a, T> {

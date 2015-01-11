@@ -24,3 +24,8 @@ fn test_format() {
         .format(&f);
     assert_eq!("+0012345.670", r[]);
 }
+
+#[test]
+fn test_conversions() {
+
+}
