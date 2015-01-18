@@ -8,7 +8,7 @@ use std::ptr;
 use std::borrow::ToOwned;
 use std::str;
 use std::ffi;
-use std::ops::{Add, Mul, Sub, Div};
+use std::ops::{Add, Mul, Sub, Div, Neg};
 
 use libc::c_double;
 
@@ -26,6 +26,7 @@ mod from_big_float;
 mod to_big_float;
 mod builder;
 mod rounding_mode;
+mod math;
 
 pub mod format;
 
@@ -208,7 +209,9 @@ generate_predicates! { BigFloat,
     #[doc="Checks that this number is zero."]
     fn is_zero    -> mpfr_zero_p,
     #[doc="Checks that this number is a regular number (neither NaN, nor an infinity nor zero)."]
-    fn is_regular -> mpfr_regular_p
+    fn is_regular -> mpfr_regular_p,
+    #[doc="Checks that this number is an integer."]
+    fn is_integer -> mpfr_integer_p
 }
 
 // Implementation of arithmetic operations for BigFloat.
@@ -410,3 +413,25 @@ impl_noncommutative_op! { Sub, sub, mpfr_sub, mpfr_sub_d }
 
 // Division
 impl_noncommutative_op! { Div, div, mpfr_div, mpfr_div_d }
+
+// Unary negation
+
+impl Neg for BigFloat {
+    type Output = BigFloat;
+
+    fn neg(mut self) -> BigFloat {
+        unsafe {
+            mpfr_neg(&mut self.value, &self.value, grnd());
+        }
+        self
+    }
+}
+
+impl<'r> Neg for &'r BigFloat {
+    type Output = BigFloat;
+
+    #[inline]
+    fn neg(self) -> BigFloat {
+        -self.clone()
+    }
+}
