@@ -39,17 +39,24 @@ pub struct Subsets<'a, T: 'a> {
     produced_empty: bool
 }
 
+impl<'a, T: 'a> Subsets<'a, T> {
+    #[inline]
+    fn snapshot(&self) -> Subset<'a, T> {
+        Subset {
+            slice: self.slice,
+            selected: self.current.clone(),
+            current: 0
+        }
+    }
+}
+
 impl<'a, T: 'a> Iterator for Subsets<'a, T> {
     type Item = Subset<'a, T>;
 
     fn next(&mut self) -> Option<Subset<'a, T>> {
         if !self.produced_empty {
             self.produced_empty = true;
-            return Some(Subset {
-                slice: self.slice,
-                selected: self.current.clone(),
-                current: 0
-            });
+            return Some(self.snapshot());
         }
 
         let mut i = 0;
@@ -66,11 +73,7 @@ impl<'a, T: 'a> Iterator for Subsets<'a, T> {
         if i == self.current.len() {
             None
         } else {
-            Some(Subset {
-                slice: self.slice,
-                selected: self.current.clone(),
-                current: 0
-            })
+            Some(self.snapshot())
         }
     }
 }
