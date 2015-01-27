@@ -171,7 +171,7 @@ pub unsafe fn format_raw(fmt: CowString, rounding_mode: RoundingMode, x: &BigFlo
     let rnd_mode = match rounding_mode {
         RoundingMode::Specific(m) => m,
         RoundingMode::Global => global_rounding_mode::get()
-    }.to_rnd_t();
+    } as mpfr_rnd_t;
 
     // get the required number of bytes
     let n = mpfr_snprintf(ptr::null_mut(), 0, f.as_ptr(), rnd_mode, &x.value);
@@ -206,37 +206,37 @@ mod tests {
     #[test]
     fn test_format_and_case() {
         macro_rules! test_formats {
-            ($($f:path, $c:path -> $e:expr);+) => {{
-                $(assert_eq!($e, FormatOptions::new($f).with_case($c).format_string()[]);)+
+            ($($f:expr, $c:expr; -> $e:expr);+) => {{
+                $(assert_eq!($e, &FormatOptions::new($f).with_case($c).format_string()[]);)+
             }};
 
-            ($($f:path -> $e:expr);+) => {{
-                $(assert_eq!($e, FormatOptions::new($f).format_string()[]);)+
+            ($($f:expr; -> $e:expr);+) => {{
+                $(assert_eq!($e, &FormatOptions::new($f).format_string()[]);)+
             }}
         }
 
         test_formats! {
-            Format::HexFloat                       -> "%R*a";
-            Format::Binary                         -> "%R*b";
-            Format::Fixed                          -> "%R*f";
-            Format::Scientific                     -> "%R*e";
-            Format::FixedOrScientific              -> "%R*g"
+            Format::HexFloat;                       -> "%R*a";
+            Format::Binary;                         -> "%R*b";
+            Format::Fixed;                          -> "%R*f";
+            Format::Scientific;                     -> "%R*e";
+            Format::FixedOrScientific;              -> "%R*g"
         }
 
         test_formats! {
-            Format::HexFloat,          Case::Lower -> "%R*a";
-            Format::Binary,            Case::Lower -> "%R*b";
-            Format::Fixed,             Case::Lower -> "%R*f";
-            Format::Scientific,        Case::Lower -> "%R*e";
-            Format::FixedOrScientific, Case::Lower -> "%R*g"
+            Format::HexFloat,          Case::Lower; -> "%R*a";
+            Format::Binary,            Case::Lower; -> "%R*b";
+            Format::Fixed,             Case::Lower; -> "%R*f";
+            Format::Scientific,        Case::Lower; -> "%R*e";
+            Format::FixedOrScientific, Case::Lower; -> "%R*g"
         }
 
         test_formats! {
-            Format::HexFloat,          Case::Upper -> "%R*A";
-            Format::Binary,            Case::Upper -> "%R*b";
-            Format::Fixed,             Case::Upper -> "%R*F";
-            Format::Scientific,        Case::Upper -> "%R*E";
-            Format::FixedOrScientific, Case::Upper -> "%R*G"
+            Format::HexFloat,          Case::Upper; -> "%R*A";
+            Format::Binary,            Case::Upper; -> "%R*b";
+            Format::Fixed,             Case::Upper; -> "%R*F";
+            Format::Scientific,        Case::Upper; -> "%R*E";
+            Format::FixedOrScientific, Case::Upper; -> "%R*G"
         }
     }
 
@@ -256,7 +256,7 @@ mod tests {
             .map(|s| s.fold((Flags::empty(), Vec::new()), |(fs, ss), &(f, s)| (fs | f, ss + s)));
 
         for (flags, s) in cases {
-            let expected_string = format!("%{}R*f", str::from_utf8(s[]).unwrap());
+            let expected_string = format!("%{}R*f", str::from_utf8(&s[]).unwrap());
             let actual_string = FormatOptions::new(Format::Fixed)
                 .with_flags(flags)
                 .format_string();
@@ -267,8 +267,8 @@ mod tests {
     #[test]
     fn test_width_and_precision() {
         let f = FormatOptions::new(Format::Fixed);
-        assert_eq!("%10R*f", f.with_width(10).format_string()[]);
-        assert_eq!("%.20R*f", f.with_precision(20).format_string()[]);
-        assert_eq!("%10.20R*f", f.with_width(10).with_precision(20).format_string()[]);
+        assert_eq!("%10R*f", &f.with_width(10).format_string()[]);
+        assert_eq!("%.20R*f", &f.with_precision(20).format_string()[]);
+        assert_eq!("%10.20R*f", &f.with_width(10).with_precision(20).format_string()[]);
     }
 }

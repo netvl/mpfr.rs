@@ -43,9 +43,4 @@ impl RoundingMode {
     pub fn use_globally<F>(self, f: F) where F: FnOnce() {
         global_rounding_mode::with(self, f)
     }
-
-    #[inline]
-    pub fn to_rnd_t(self) -> mpfr_rnd_t {
-        self as mpfr_rnd_t
-    }
 }

@@ -4,8 +4,7 @@ use libc::{uintmax_t, intmax_t, c_double, c_float, c_int};
 
 use mpfr_sys::*;
 
-use BigFloat;
-use global_rounding_mode;
+use {BigFloat, grnd};
 
 pub trait UpdateBigFloat {
     fn update_big_float(self, target: &mut BigFloat);
@@ -14,7 +13,7 @@ pub trait UpdateBigFloat {
 impl<'a> UpdateBigFloat for &'a BigFloat {
     fn update_big_float(self, target: &mut BigFloat) {
         unsafe {
-            mpfr_set(&mut target.value, &self.value, global_rounding_mode::get().to_rnd_t());
+            mpfr_set(&mut target.value, &self.value, grnd());
         }
     }
 }
@@ -24,7 +23,7 @@ macro_rules! impl_big_float_set {
         impl UpdateBigFloat for $t {
             fn update_big_float(self, target: &mut BigFloat) {
                 unsafe {
-                    $f(&mut target.value, self as $tt, global_rounding_mode::get().to_rnd_t());
+                    $f(&mut target.value, self as $tt, grnd());
                 }
             }
         }
@@ -59,10 +58,7 @@ impl<'a> UpdateBigFloat for (&'a str, usize) {
         let s = CString::from_slice(self.0.as_bytes());
 
         let r = unsafe {
-            mpfr_set_str(
-                &mut target.value, s.as_ptr(), self.1 as c_int, 
-                global_rounding_mode::get().to_rnd_t()
-            )
+            mpfr_set_str(&mut target.value, s.as_ptr(), self.1 as c_int, grnd())
         };
 
         if r != 0 {

@@ -22,6 +22,7 @@ pub use to_big_float::ToBigFloat;
 pub use builder::{BigFloatBuilder, BigFloatBuilderWithPrec};
 pub use rounding_mode::{RoundingMode, global_rounding_mode};
 pub use math::Math;
+pub use pow::Pow;
 
 #[macro_use] mod macros;
 mod flags;
@@ -41,11 +42,12 @@ pub mod traits {
     pub use FromBigFloat;
     pub use ToBigFloat;
     pub use Math;
+    pub use Pow;
 }
 
 #[inline]
 fn grnd() -> mpfr_rnd_t {
-    global_rounding_mode::get().to_rnd_t()
+    global_rounding_mode::get() as mpfr_rnd_t
 }
 
 #[derive(Copy)]
@@ -227,6 +229,13 @@ impl BigFloat {
                 Sign::Zero if Flags::Erange.is_set() => None,
                 s => Some(s)
             }
+        }
+    }
+
+    #[inline]
+    pub fn free_cache() {
+        unsafe {
+            mpfr_free_cache();
         }
     }
 }

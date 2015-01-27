@@ -1,7 +1,6 @@
 use mpfr_sys::*;
 
-use BigFloat;
-use global_rounding_mode;
+use {BigFloat, grnd};
 
 pub trait FromBigFloat {
     type Target;
@@ -14,7 +13,7 @@ macro_rules! from_big_float_impl {
             type Target = $t;
             fn from_big_float(x: &BigFloat, _: Option<$t>) -> $t {
                 unsafe {
-                    $f(&x.value, global_rounding_mode::get().to_rnd_t()) as $t
+                    $f(&x.value, grnd()) as $t
                 }
             }
         }

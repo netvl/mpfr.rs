@@ -1,3 +1,5 @@
+#![allow(unstable)]
+
 extern crate mpfr;
 
 use mpfr::{BigFloat};
@@ -22,7 +24,7 @@ fn test_format() {
         .with_width(12)
         .with_precision(3)
         .format(&f);
-    assert_eq!("+0012345.670", r[]);
+    assert_eq!("+0012345.670", &r[]);
 }
 
 #[test]
