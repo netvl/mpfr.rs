@@ -107,6 +107,21 @@ macro_rules! generate_predicates {
     )
 }
 
+macro_rules! generate_constant_setters {
+    ($t:ty, $($(#[$attr:meta])* fn $method:ident -> $mpfr:ident),+) => (
+        impl $t {
+        $(
+            $(#[$attr])*
+            pub fn $method(&mut self) {
+                unsafe {
+                    $mpfr(&mut self.value, grnd());
+                }
+            }
+        )+
+        }
+    )
+}
+
 impl BigFloat {
     #[inline]
     pub fn set_default_prec(precision: usize) {
@@ -255,6 +270,12 @@ generate_predicates! { BigFloat,
     fn is_integer -> mpfr_integer_p
 }
 
+generate_constant_setters! { BigFloat,
+    fn set_to_const_log2     -> mpfr_const_log2,
+    fn set_to_const_pi       -> mpfr_const_pi,
+    fn set_to_const_euler    -> mpfr_const_euler,
+    fn set_to_const_catalan  -> mpfr_const_catalan
+}
 
 // Addition
 impl_commutative_op! { Add, add, mpfr_add, mpfr_add_d }
