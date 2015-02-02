@@ -5,7 +5,7 @@ use mpfr::traits::*;
 use mpfr::format::{FormatOptions, Format};
 
 fn format(prec: u32, x: &BigFloat) -> String {
-    FormatOptions::new(Format::Fixed).with_precision(prec).format(x)
+    FormatOptions::new(Format::Fixed).with_precision(prec.digits()).format(x)
 }
 
 #[test]

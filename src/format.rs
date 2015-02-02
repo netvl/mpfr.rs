@@ -7,8 +7,7 @@ use libc::{c_char, size_t};
 
 use mpfr_sys::*;
 
-use BigFloat;
-use global_rounding_mode;
+use {BigFloat, Precision, global_rounding_mode};
 
 pub use self::flags::Flags;
 
@@ -110,8 +109,14 @@ impl FormatOptions {
     }
 
     #[inline]
-    pub fn with_precision(mut self, precision: u32) -> FormatOptions {
-        self.precision = Some(precision);
+    pub fn with_precision_of(mut self, value: &BigFloat) -> FormatOptions {
+        self.precision = Some(value.prec().digits());
+        self
+    }
+
+    #[inline]
+    pub fn with_precision(mut self, precision: Precision) -> FormatOptions {
+        self.precision = Some(precision.digits());
         self
     }
 
@@ -201,6 +206,8 @@ pub unsafe fn format_raw(fmt: CowString, rounding_mode: RoundingMode, x: &BigFlo
 mod tests {
     use std::str;
 
+    use traits::ToPrecision;
+
     use super::*;
 
     #[test]
@@ -268,7 +275,7 @@ mod tests {
     fn test_width_and_precision() {
         let f = FormatOptions::new(Format::Fixed);
         assert_eq!("%10R*f", &f.with_width(10).format_string()[]);
-        assert_eq!("%.20R*f", &f.with_precision(20).format_string()[]);
-        assert_eq!("%10.20R*f", &f.with_width(10).with_precision(20).format_string()[]);
+        assert_eq!("%.20R*f", &f.with_precision(20.digits()).format_string()[]);
+        assert_eq!("%10.20R*f", &f.with_width(10).with_precision(20.digits()).format_string()[]);
     }
 }

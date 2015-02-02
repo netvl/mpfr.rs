@@ -1,6 +1,7 @@
 extern crate mpfr;
 
-use mpfr::{BigFloat};
+use mpfr::BigFloat;
+use mpfr::traits::*;
 use mpfr::format::{flags, FormatOptions, Format};
 
 #[test]
@@ -20,7 +21,7 @@ fn test_format() {
     let r = FormatOptions::new(Format::Fixed)
         .with_flags(flags::SIGN | flags::ZERO_PADDED)
         .with_width(12)
-        .with_precision(3)
+        .with_precision(3.digits())
         .format(&f);
     assert_eq!("+0012345.670", &r[]);
 }
@@ -39,6 +40,6 @@ fn test_subtraction() {
     let x = BigFloat::new().from(12345f64);
     let y = BigFloat::new().from(54322u16);
     let z = x - y;
-    let zz = BigFloat::new().from(-41077i32);
+    let zz = BigFloat::new().from(-41977i32);
     assert_eq!(z, zz);
 }

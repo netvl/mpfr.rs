@@ -86,17 +86,22 @@ pub struct BigFloat {
 
 impl fmt::Debug for BigFloat {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "BigFloat {{ prec: {}, sign: {}, exp: {}, d: {:p} }}", 
+        write!(f, "BigFloat {{ prec: {}, sign: {}, exp: {}, d: {:p}, value: {} }}", 
                self.value._mpfr_prec, self.value._mpfr_sign,
-               self.value._mpfr_exp, self.value._mpfr_d)
+               self.value._mpfr_exp, self.value._mpfr_d, self)
     }
 }
 
-//impl fmt::Display for BigFloat {
-    //fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        //write!
-    //}
-//}
+impl fmt::Display for BigFloat {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use format::{FormatOptions, Format};
+
+        let s = FormatOptions::new(Format::Fixed)
+            .with_precision_of(self)
+            .format(self);
+        write!(f, "{}", s)
+    }
+}
 
 impl Drop for BigFloat {
     fn drop(&mut self) {
