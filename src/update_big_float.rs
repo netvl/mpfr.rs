@@ -1,6 +1,6 @@
 use std::ffi::CString;
 
-use libc::{uintmax_t, intmax_t, c_double, c_float, c_int};
+use libc::{uintmax_t, intmax_t, c_double, c_float, c_int, c_long, c_ulong};
 
 use mpfr_sys::*;
 
@@ -36,12 +36,12 @@ macro_rules! impl_big_float_set {
 impl_big_float_set! {
     f32 as c_float,   mpfr_set_flt;
     f64 as c_double,  mpfr_set_d;
-    i8  as intmax_t,  __gmpfr_set_sj;
-    u8  as uintmax_t, __gmpfr_set_uj;
-    i16 as intmax_t,  __gmpfr_set_sj;
-    u16 as uintmax_t, __gmpfr_set_uj;
-    i32 as intmax_t,  __gmpfr_set_sj;
-    u32 as uintmax_t, __gmpfr_set_uj;
+    i8  as c_long,    mpfr_set_si;
+    u8  as c_ulong,   mpfr_set_ui;
+    i16 as c_long,    mpfr_set_si;
+    u16 as c_ulong,   mpfr_set_ui;
+    i32 as c_long,    mpfr_set_si;
+    u32 as c_ulong,   mpfr_set_ui;
     i64 as intmax_t,  __gmpfr_set_sj;
     u64 as uintmax_t, __gmpfr_set_uj
 }

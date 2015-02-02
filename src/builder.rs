@@ -2,6 +2,7 @@
 
 use UpdateBigFloat;
 use BigFloat;
+use Precision;
 
 pub struct BigFloatBuilder;
 
@@ -47,14 +48,14 @@ macro_rules! impl_building {
 
 impl BigFloatBuilder {
     #[inline]
-    pub fn with_prec(self, precision: usize) -> BigFloatBuilderWithPrec {
+    pub fn with_prec(self, precision: Precision) -> BigFloatBuilderWithPrec {
         BigFloatBuilderWithPrec(precision)
     }
 }
 
 impl_building! { BigFloatBuilder, |:_| BigFloat::fresh() }
 
-pub struct BigFloatBuilderWithPrec(usize);
+pub struct BigFloatBuilderWithPrec(Precision);
 
 impl_building! { 
     BigFloatBuilderWithPrec,

@@ -101,6 +101,20 @@ impl<'a, T: 'a> Iterator for Subset<'a, T> {
     }
 }
 
+pub mod precision {
+    use std::num::Float;
+
+    pub fn digits_to_bits(digits: u32) -> u32 {
+        const LOG2_10: f64 = 3.3219280948873624;
+        (digits as f64 * LOG2_10).ceil() as u32
+    }
+
+    pub fn bits_to_digits(bits: u32) -> u32 {
+        const LOG10_2: f64 = 0.30102999566398119;
+        (bits as f64 * LOG10_2).floor() as u32
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,5 +1,3 @@
-#![allow(unstable)]
-
 extern crate mpfr;
 
 use mpfr::{BigFloat};
@@ -28,6 +26,19 @@ fn test_format() {
 }
 
 #[test]
-fn test_conversions() {
+fn test_addition() {
+    let x = BigFloat::new().from(12345f64);
+    let y = BigFloat::new().from(54322u16);
+    let z = x + y;
+    let zz = BigFloat::new().from(66667i32);
+    assert_eq!(z, zz);
+}
 
+#[test]
+fn test_subtraction() {
+    let x = BigFloat::new().from(12345f64);
+    let y = BigFloat::new().from(54322u16);
+    let z = x - y;
+    let zz = BigFloat::new().from(-41077i32);
+    assert_eq!(z, zz);
 }

@@ -29,7 +29,7 @@ pub mod global_rounding_mode {
 }
 
 
-#[derive(Copy, PartialEq, Eq, Show)]
+#[derive(Copy, PartialEq, Eq, Debug)]
 pub enum RoundingMode {
     ToNearest    = MPFR_RNDN as isize,
     TowardsZero  = MPFR_RNDZ as isize,

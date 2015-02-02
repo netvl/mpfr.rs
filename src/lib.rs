@@ -1,4 +1,4 @@
-#![allow(unstable)]
+#![feature(libc, std_misc, core, unicode, io, collections, hash)]
 
 extern crate libc;
 extern crate "mpfr-sys" as mpfr_sys;
@@ -7,6 +7,7 @@ extern crate "mpfr-sys" as mpfr_sys;
 use std::mem;
 use std::ptr;
 use std::ffi;
+use std::fmt;
 use std::ops::{Add, Mul, Sub, Div, Neg};
 use std::cmp::Ordering;
 use std::num::Int;
@@ -23,6 +24,7 @@ pub use builder::{BigFloatBuilder, BigFloatBuilderWithPrec};
 pub use rounding_mode::{RoundingMode, global_rounding_mode};
 pub use math::Math;
 pub use pow::Pow;
+pub use precision::{Precision, ToPrecision};
 
 #[macro_use] mod macros;
 mod flags;
@@ -34,6 +36,7 @@ mod rounding_mode;
 mod math;
 mod pow;
 mod util;
+mod precision;
 
 pub mod format;
 
@@ -43,6 +46,7 @@ pub mod traits {
     pub use ToBigFloat;
     pub use Math;
     pub use Pow;
+    pub use ToPrecision;
 }
 
 #[inline]
@@ -79,6 +83,20 @@ impl Sign {
 pub struct BigFloat {
     value: __mpfr_struct
 }
+
+impl fmt::Debug for BigFloat {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "BigFloat {{ prec: {}, sign: {}, exp: {}, d: {:p} }}", 
+               self.value._mpfr_prec, self.value._mpfr_sign,
+               self.value._mpfr_exp, self.value._mpfr_d)
+    }
+}
+
+//impl fmt::Display for BigFloat {
+    //fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        //write!
+    //}
+//}
 
 impl Drop for BigFloat {
     fn drop(&mut self) {
@@ -124,13 +142,13 @@ macro_rules! generate_constant_setters {
 
 impl BigFloat {
     #[inline]
-    pub fn set_default_prec(precision: usize) {
-        unsafe { mpfr_set_default_prec(precision as mpfr_prec_t); }
+    pub fn set_default_prec(precision: Precision) {
+        unsafe { mpfr_set_default_prec(precision.bits() as mpfr_prec_t); }
     }
 
     #[inline]
-    pub fn get_default_prec() -> usize {
-        unsafe { mpfr_get_default_prec() as usize }
+    pub fn get_default_prec() -> Precision {
+        unsafe { mpfr_get_default_prec().bits() }
     }
 
     #[inline]
@@ -146,11 +164,11 @@ impl BigFloat {
         }
     }
 
-    pub fn fresh_with_prec(precision: usize) -> BigFloat {
+    pub fn fresh_with_prec(precision: Precision) -> BigFloat {
         BigFloat {
             value: unsafe {
                 let mut value = mem::uninitialized();
-                mpfr_init2(&mut value, precision as mpfr_prec_t);
+                mpfr_init2(&mut value, precision.bits() as mpfr_prec_t);
                 value
             }
         }
@@ -194,25 +212,25 @@ impl BigFloat {
         }
     }
 
-    pub fn prec(&self) -> usize {
+    pub fn prec(&self) -> Precision {
         unsafe {
-            mpfr_get_prec(&self.value) as usize
+            mpfr_get_prec(&self.value).bits()
         }
     }
 
-    pub fn set_prec_clear(&mut self, precision: usize) {
+    pub fn set_prec_clear(&mut self, precision: Precision) {
         unsafe {
-            mpfr_set_prec(&mut self.value, precision as mpfr_prec_t);
+            mpfr_set_prec(&mut self.value, precision.bits() as mpfr_prec_t);
         }
     }
 
-    pub fn set_prec_round(&mut self, precision: usize) {
+    pub fn set_prec_round(&mut self, precision: Precision) {
         unsafe {
-            mpfr_prec_round(&mut self.value, precision as mpfr_prec_t, grnd());
+            mpfr_prec_round(&mut self.value, precision.bits() as mpfr_prec_t, grnd());
         }
     }
 
-    pub fn to_string_in_base(&self, base: usize) -> (String, u64) {
+    pub fn to_string_in_base(&self, base: u32) -> (String, u64) {
         unsafe {
             let mut exp: mpfr_exp_t = 0;
             // We're going to ask MPFR to allocate the string itself, so the maximum
