@@ -5,6 +5,21 @@ use BigFloat;
 
 pub struct BigFloatBuilder;
 
+macro_rules! generate_const_methods {
+    ($target:ty, $($method:ident -> $setter:ident),+) => {
+        impl $target {
+            $(
+            #[inline]
+            pub fn $method(self) -> BigFloat {
+                let mut r = self.fresh();
+                r.$setter();
+                r
+            }
+            )+
+        }
+    }
+}
+
 macro_rules! impl_building {
     ($target:ty, $constructor:expr) => {
         impl $target {
@@ -19,34 +34,13 @@ macro_rules! impl_building {
                 r.set_to(value);
                 r
             }
+        }
 
-            #[inline]
-            pub fn const_log2(self) -> BigFloat {
-                let mut r = self.fresh();
-                r.set_to_const_log2();
-                r
-            }
-
-            #[inline]
-            pub fn const_pi(self) -> BigFloat {
-                let mut r = self.fresh();
-                r.set_to_const_pi();
-                r
-            }
-
-            #[inline]
-            pub fn const_euler(self) -> BigFloat {
-                let mut r = self.fresh();
-                r.set_to_const_euler();
-                r
-            }
-
-            #[inline]
-            pub fn const_catalan(self) -> BigFloat {
-                let mut r = self.fresh();
-                r.set_to_const_catalan();
-                r
-            }
+        generate_const_methods! { $target,
+            const_log2 -> set_to_const_log2,
+            const_pi -> set_to_const_pi,
+            const_euler -> set_to_const_euler,
+            const_catalan -> set_to_const_catalan
         }
     }
 }
