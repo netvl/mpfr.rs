@@ -43,3 +43,22 @@ fn test_subtraction() {
     let zz = BigFloat::new().from(-41977i32);
     assert_eq!(z, zz);
 }
+
+#[test]
+fn test_multiplication() {
+    let x = BigFloat::new().from(12345f64);
+    let mut y = BigFloat::new().from(-54322i32);
+    let z = x * &y;
+    y.set_to(-670605090i64);
+    assert_eq!(z, y);
+}
+
+#[test]
+fn test_division() {
+    let x = BigFloat::new().with_prec(30.digits()).from("2839231.999769250");
+    let mut y = BigFloat::new().from(3.346643375f64);
+    let mut z = x / &y;
+    z.set_prec_round(10.digits());  // suppress division artifcats
+    y.set_to(848382u32);
+    assert_eq!(z, y);
+}
