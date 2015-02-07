@@ -4,14 +4,14 @@ use {BigFloat, grnd};
 
 pub trait FromBigFloat {
     type Target;
-    fn from_big_float(x: &BigFloat, _: Option<Self>) -> Self::Target;
+    fn from_big_float(x: &BigFloat) -> Self::Target;
 }
 
 macro_rules! from_big_float_impl {
     ($t:ty, $f:ident) => {
         impl FromBigFloat for $t {
             type Target = $t;
-            fn from_big_float(x: &BigFloat, _: Option<$t>) -> $t {
+            fn from_big_float(x: &BigFloat) -> $t {
                 unsafe {
                     $f(&x.value, grnd()) as $t
                 }
@@ -31,7 +31,7 @@ impl FromBigFloat for String {
     type Target = (String, u64);
 
     #[inline]
-    fn from_big_float(x: &BigFloat, _: Option<String>) -> (String, u64) {
+    fn from_big_float(x: &BigFloat) -> (String, u64) {
         x.to_string_in_base(10)
     }
 }

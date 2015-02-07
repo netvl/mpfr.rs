@@ -259,7 +259,7 @@ mod tests {
             (flags::SIGN,           b"+")
         ];
 
-        let mut cases = flags.subsets()
+        let cases = flags.subsets()
             .map(|s| s.fold((Flags::empty(), Vec::new()), |(fs, ss), &(f, s)| (fs | f, ss + s)));
 
         for (flags, s) in cases {

@@ -54,6 +54,7 @@ fn grnd() -> mpfr_rnd_t {
     global_rounding_mode::get() as mpfr_rnd_t
 }
 
+/// Represents a numerical sign.
 #[derive(Copy)]
 pub enum Sign {
     Negative,
@@ -62,6 +63,11 @@ pub enum Sign {
 }
 
 impl Sign {
+    /// Obtains a `Sign` value from the given integral number.
+    ///
+    /// The standard convention is used: if the given number is less than zero, then
+    /// `Negative` is returned; if greater than zero, then `Positive` is returned;
+    /// if equals to zero, then `Zero` is returned.
     pub fn from_int<I: Int>(i: I) -> Sign {
         match i.cmp(&Int::zero()) {
             Ordering::Less => Sign::Negative,
@@ -70,10 +76,13 @@ impl Sign {
         }
     }
 
+    /// Converts the `Sign` value to an integral number.
+    ///
+    /// The standard convention is used: `Negative` is turned to `-1`, `Zero` is turned to `0`,
+    /// `Positive` - to `1`.
     pub fn to_int<I: Int>(self) -> I {
-        fn zero<I: Int>() -> I { Int::zero() }
         match self {
-            Sign::Negative => zero::<I>()-Int::one(),  // TODO: use UFCS syntax
+            Sign::Negative => <I as Int>::zero()-Int::one(), 
             Sign::Zero => Int::zero(),
             Sign::Positive => Int::one()
         }
@@ -186,7 +195,7 @@ impl BigFloat {
 
     #[inline]
     pub fn get<T: FromBigFloat>(&self) -> T::Target {
-        FromBigFloat::from_big_float(self, None::<T>)
+        <T as FromBigFloat>::from_big_float(self)
     }
 
     #[inline]

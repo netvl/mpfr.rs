@@ -1,5 +1,6 @@
 use mpfr_sys::*;
 
+/// Represents error flags used by MPFR to signal exceptional conditions.
 #[derive(Copy)]
 pub enum Flags {
     Underflow,
@@ -13,18 +14,21 @@ pub enum Flags {
 macro_rules! impl_flags {
     ($($f:ident -> $get:ident, $set:ident, $clear:ident);+) => {
         impl Flags {
+            /// Checks if the given flag is set.
             pub fn is_set(self) -> bool {
                 (match self {
                     $(Flags::$f => unsafe { $get() }),+
                 }) != 0
             }
 
+            /// Sets the given flag.
             pub fn set(self) {
                 match self {
                     $(Flags::$f => unsafe { $set() }),+
                 }
             }
             
+            /// Removes the given flag.
             pub fn clear(self) {
                 match self {
                     $(Flags::$f => unsafe { $clear() }),+
