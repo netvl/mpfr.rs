@@ -53,11 +53,11 @@ impl BigFloatBuilder {
     }
 }
 
-impl_building! { BigFloatBuilder, |:_| BigFloat::fresh() }
+impl_building! { BigFloatBuilder, |_| BigFloat::fresh() }
 
 pub struct BigFloatBuilderWithPrec(Precision);
 
 impl_building! { 
     BigFloatBuilderWithPrec,
-    |: this: BigFloatBuilderWithPrec| BigFloat::fresh_with_prec(this.0)
+    |this: BigFloatBuilderWithPrec| BigFloat::fresh_with_prec(this.0)
 }
