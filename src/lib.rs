@@ -10,7 +10,7 @@ use std::ffi;
 use std::fmt;
 use std::ops::{Add, Mul, Sub, Div, Neg};
 use std::cmp::Ordering;
-use std::num::Int;
+use std::num::{Int, FromPrimitive};
 
 use libc::c_double;
 
@@ -307,6 +307,16 @@ generate_constant_setters! { BigFloat,
     fn set_to_const_pi       -> mpfr_const_pi,
     fn set_to_const_euler    -> mpfr_const_euler,
     fn set_to_const_catalan  -> mpfr_const_catalan
+}
+
+impl FromPrimitive for BigFloat {
+    fn from_i64(n: i64) -> Option<BigFloat> {
+        Some(n.to_big_float())
+    }
+
+    fn from_u64(n: u64) -> Option<BigFloat> {
+        Some(n.to_big_float())
+    }
 }
 
 // Addition
