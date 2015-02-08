@@ -1,6 +1,6 @@
 [package]
 name = "mpfr"
-version = "0.0.4"
+version = "0.0.5"
 authors = ["Vladimir Matveev <vladimir.matweev@gmail.com>"]
 description = "High-level bindings to MPFR library"
 license = "MIT"
@@ -9,4 +9,5 @@ repository = "https://github.com/netvl/mpfr.rs"
 [dependencies]
 mpfr-sys = "*"
 bitflags = "*"
+num = "*"
 

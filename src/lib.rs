@@ -3,6 +3,7 @@
 extern crate libc;
 extern crate "mpfr-sys" as mpfr_sys;
 #[macro_use] #[no_link] extern crate bitflags;
+extern crate num;
 
 use std::mem;
 use std::ptr;
@@ -13,6 +14,8 @@ use std::cmp::Ordering;
 use std::num::{Int, FromPrimitive};
 
 use libc::c_double;
+
+use num::{Zero, One};
 
 use mpfr_sys::*;
 
@@ -381,3 +384,25 @@ impl PartialOrd for BigFloat {
     }
 }
 
+// Zero and one
+
+impl Zero for BigFloat {
+    #[inline]
+    fn zero() -> BigFloat {
+        let mut r = BigFloat::new().fresh();
+        r.set_to_zero(Sign::Positive);
+        r
+    }
+
+    #[inline]
+    fn is_zero(&self) -> bool {
+        BigFloat::is_zero(self)
+    }
+}
+
+impl One for BigFloat {
+    #[inline]
+    fn one() -> BigFloat {
+        BigFloat::new().from(1u32)
+    }
+}
