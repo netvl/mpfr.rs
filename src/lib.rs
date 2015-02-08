@@ -218,7 +218,7 @@ impl BigFloat {
     #[inline]
     pub fn set_to_zero(&mut self, sign: Sign) {
         unsafe {
-            mpfr_set_inf(&mut self.value, sign.to_int());
+            mpfr_set_zero(&mut self.value, sign.to_int());
         }
     }
 
