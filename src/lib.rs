@@ -317,6 +317,14 @@ impl FromPrimitive for BigFloat {
     fn from_u64(n: u64) -> Option<BigFloat> {
         Some(n.to_big_float())
     }
+    
+    fn from_f32(n: f32) -> Option<BigFloat> {
+        Some(n.to_big_float())
+    }
+
+    fn from_f64(n: f64) -> Option<BigFloat> {
+        Some(n.to_big_float())
+    }
 }
 
 // Addition
