@@ -9,13 +9,13 @@ use std::mem;
 use std::ptr;
 use std::ffi;
 use std::fmt;
-use std::ops::{Add, Mul, Sub, Div, Neg};
+use std::ops::{Add, Mul, Sub, Div, Rem, Neg};
 use std::cmp::Ordering;
 use std::num::{Int, FromPrimitive};
 
 use libc::c_double;
 
-use num::{Zero, One};
+use num::{Zero, One, Num};
 
 use mpfr_sys::*;
 
@@ -341,6 +341,11 @@ impl_noncommutative_op! { Sub, sub, mpfr_sub, mpfr_sub_d }
 
 // Division
 impl_noncommutative_op! { Div, div, mpfr_div, mpfr_div_d }
+
+// Remainder
+impl_noncommutative_op! { Rem, rem, mpfr_remainder }
+
+impl Num for BigFloat {}
 
 // Unary negation
 

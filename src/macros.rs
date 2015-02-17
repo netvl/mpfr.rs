@@ -177,11 +177,14 @@ macro_rules! impl_noncommutative_op_ref_prim {
 }
 
 macro_rules! impl_noncommutative_op {
-    ($tr:ident, $meth:ident, $mpfr:ident, $mpfr_f64:ident) => {
+    ($tr:ident, $meth:ident, $mpfr:ident) => {
         impl_noncommutative_op_val_ref! { $tr, $meth, $mpfr }
         impl_noncommutative_op_val_val! { $tr, $meth }
         impl_noncommutative_op_ref_val! { $tr, $meth, $mpfr }
         impl_noncommutative_op_ref_ref! { $tr, $meth }
+    };
+    ($tr:ident, $meth:ident, $mpfr:ident, $mpfr_f64:ident) => {
+        impl_noncommutative_op! { $tr, $meth, $mpfr }
         impl_noncommutative_op_val_prim! { $tr, $meth, f64, c_double, $mpfr_f64 }
     }
 }
