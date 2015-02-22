@@ -1,6 +1,6 @@
 [package]
 name = "mpfr"
-version = "0.0.7"
+version = "0.0.8"
 authors = ["Vladimir Matveev <vladimir.matweev@gmail.com>"]
 description = "High-level bindings to MPFR library"
 license = "MIT"
