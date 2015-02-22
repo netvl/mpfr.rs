@@ -89,7 +89,7 @@ macro_rules! impl_commutative_op_ref_prim {
 
             #[inline]
             fn $meth(self, rhs: $prim) -> BigFloat {
-                self.clone() + rhs
+                self.clone().$meth(rhs)
             }
         }
     }
@@ -102,7 +102,7 @@ macro_rules! impl_commutative_op_prim_val {
 
             #[inline]
             fn $meth(self, rhs: BigFloat) -> BigFloat {
-                rhs + self
+                rhs.$meth(self)
             }
         }
     }
@@ -114,21 +114,25 @@ macro_rules! impl_commutative_op_prim_ref {
             type Output = BigFloat;
 
             #[inline]
-            fn add(self, rhs: &'r BigFloat) -> BigFloat {
-                rhs + self
+            fn $meth(self, rhs: &'r BigFloat) -> BigFloat {
+                rhs.$meth(self)
             }
         }
     }
 }
 
 macro_rules! impl_commutative_op {
-    ($tr:ident, $meth:ident, $mpfr:ident, $mpfr_f64:ident) => {
+    ($tr:ident, $meth:ident, $mpfr:ident, $mpfr_f64:ident, $mpfr_u32:ident, $mpfr_i32:ident) => {
         impl_commutative_op_val_ref! { $tr, $meth, $mpfr }
         impl_commutative_op_val_val! { $tr, $meth }
         impl_commutative_op_ref_val! { $tr, $meth }
         impl_commutative_op_ref_ref! { $tr, $meth }
         impl_commutative_op_val_prim! { $tr, $meth, f64, c_double, $mpfr_f64 }
         impl_commutative_op_ref_prim! { $tr, $meth, f64 }
+        impl_commutative_op_val_prim! { $tr, $meth, u32, c_ulong, $mpfr_u32 }
+        impl_commutative_op_ref_prim! { $tr, $meth, u32 }
+        impl_commutative_op_val_prim! { $tr, $meth, i32, c_long, $mpfr_i32 }
+        impl_commutative_op_ref_prim! { $tr, $meth, i32 }
         // Does not work now due to trait coherence rules :(
         //impl_commutative_op_prim_val! { $tr, $meth, f64 }
         //impl_commutative_op_prim_ref! { $tr, $meth, f64 }
@@ -183,8 +187,13 @@ macro_rules! impl_noncommutative_op {
         impl_noncommutative_op_ref_val! { $tr, $meth, $mpfr }
         impl_noncommutative_op_ref_ref! { $tr, $meth }
     };
-    ($tr:ident, $meth:ident, $mpfr:ident, $mpfr_f64:ident) => {
+    ($tr:ident, $meth:ident, $mpfr:ident, $mpfr_f64:ident, $mpfr_u32:ident, $mpfr_i32:ident) => {
         impl_noncommutative_op! { $tr, $meth, $mpfr }
         impl_noncommutative_op_val_prim! { $tr, $meth, f64, c_double, $mpfr_f64 }
+        impl_noncommutative_op_ref_prim! { $tr, $meth, f64 }
+        impl_noncommutative_op_val_prim! { $tr, $meth, u32, c_ulong, $mpfr_u32 }
+        impl_noncommutative_op_ref_prim! { $tr, $meth, u32 }
+        impl_noncommutative_op_val_prim! { $tr, $meth, i32, c_long, $mpfr_i32 }
+        impl_noncommutative_op_ref_prim! { $tr, $meth, i32 }
     }
 }

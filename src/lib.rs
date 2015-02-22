@@ -13,7 +13,7 @@ use std::ops::{Add, Mul, Sub, Div, Rem, Neg};
 use std::cmp::Ordering;
 use std::num::{Int, FromPrimitive};
 
-use libc::c_double;
+use libc::{c_double, c_long, c_ulong};
 
 use num::{Zero, One, Num};
 
@@ -331,16 +331,16 @@ impl FromPrimitive for BigFloat {
 }
 
 // Addition
-impl_commutative_op! { Add, add, mpfr_add, mpfr_add_d }
+impl_commutative_op! { Add, add, mpfr_add, mpfr_add_d, mpfr_add_ui, mpfr_add_si }
 
 // Multiplication
-impl_commutative_op! { Mul, mul, mpfr_mul, mpfr_mul_d }
+impl_commutative_op! { Mul, mul, mpfr_mul, mpfr_mul_d, mpfr_mul_ui, mpfr_mul_si }
 
 // Subtraction
-impl_noncommutative_op! { Sub, sub, mpfr_sub, mpfr_sub_d }
+impl_noncommutative_op! { Sub, sub, mpfr_sub, mpfr_sub_d, mpfr_sub_ui, mpfr_sub_si }
 
 // Division
-impl_noncommutative_op! { Div, div, mpfr_div, mpfr_div_d }
+impl_noncommutative_op! { Div, div, mpfr_div, mpfr_div_d, mpfr_div_ui, mpfr_div_si }
 
 // Remainder
 impl_noncommutative_op! { Rem, rem, mpfr_remainder }
