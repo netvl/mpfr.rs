@@ -1,4 +1,4 @@
-#![feature(libc, std_misc, core, unicode, io, collections, hash)]
+#![feature(libc, std_misc, core, unicode, old_io, collections)]
 
 extern crate libc;
 extern crate "mpfr-sys" as mpfr_sys;
@@ -7,7 +7,7 @@ extern crate num;
 
 use std::mem;
 use std::ptr;
-use std::ffi;
+use std::ffi::CStr;
 use std::fmt;
 use std::ops::{Add, Mul, Sub, Div, Rem, Neg};
 use std::cmp::Ordering;
@@ -263,7 +263,7 @@ impl BigFloat {
                 panic!("Couldn't convert big float to a string");
             }
 
-            let v = ffi::c_str_to_bytes(&(s as *const _)).to_vec();
+            let v = CStr::from_ptr(s as *const _).to_bytes().to_vec();
             mpfr_free_str(s);
 
             let r = String::from_utf8(v).unwrap();

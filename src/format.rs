@@ -1,7 +1,6 @@
 use std::ffi::CString;
 use std::ptr;
-use std::string::CowString;
-use std::borrow::{ToOwned, IntoCow};
+use std::borrow::{ToOwned, IntoCow, Cow};
 
 use libc::{c_char, size_t};
 
@@ -170,8 +169,8 @@ impl FormatOptions {
 
 }
 
-pub unsafe fn format_raw(fmt: CowString, rounding_mode: RoundingMode, x: &BigFloat) -> String {
-    let f = CString::from_vec(fmt.into_owned().into_bytes());
+pub unsafe fn format_raw(fmt: Cow<str>, rounding_mode: RoundingMode, x: &BigFloat) -> String {
+    let f = CString::new(fmt.into_owned()).unwrap();
 
     let rnd_mode = match rounding_mode {
         RoundingMode::Specific(m) => m,

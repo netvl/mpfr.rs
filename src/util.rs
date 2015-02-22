@@ -1,6 +1,6 @@
 #![macro_use]
 
-use std::collections::Bitv;
+use std::collections::BitVec;
 
 macro_rules! for_flags {
     ($f:expr, $($p:path => $e:expr),+) => {
@@ -27,7 +27,7 @@ impl<T> SliceSubsetsExt for [T] {
     fn subsets(&self) -> Subsets<T> {
         Subsets {
             slice: self,
-            current: Bitv::from_elem(self.len(), false),
+            current: BitVec::from_elem(self.len(), false),
             produced_empty: false
         }
     }
@@ -35,7 +35,7 @@ impl<T> SliceSubsetsExt for [T] {
 
 pub struct Subsets<'a, T: 'a> {
     slice: &'a [T],
-    current: Bitv,
+    current: BitVec,
     produced_empty: bool
 }
 
@@ -80,7 +80,7 @@ impl<'a, T: 'a> Iterator for Subsets<'a, T> {
 
 pub struct Subset<'a, T: 'a> {
     slice: &'a [T],
-    selected: Bitv,
+    selected: BitVec,
     current: usize
 }
 
